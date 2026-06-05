@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Find Users - Nyapi{% endblock %}
+
+{% block content %}
+<div class="find-users-container">
+    <div class="find-users-header">
+        <h2>Find Users</h2>
+        <form method="GET" action="{{ url_for('find_users') }}" class="user-search-form">
+            <input type="text" name="q" placeholder="Search users..." value="{{ query }}">
+            <button type="submit" class="search-btn">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+    
+    <div class="users-grid">
+        {% for user in users %}
+            <div class="user-card">
+                <div class="user-card-header">
+                    <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_pic) }}" 
+                         alt="{{ user.username }}" class="user-card-avatar">
+                    <div class="user-card-info">
+                        <a href="{{ url_for('profile', username=user.username) }}" class="user-card-name">
+                            {{ user.username }}
+                        </a>
+                        <span class="user-card-joined">Joined {{ user.created_at.strftime('%b %Y') }}</span>
+                    </div>
+                </div>
+                
+                <div class="user-card-bio">
+                    {{ user.bio[:100] }}{% if user.bio|length > 100 %}...{% endif %}
+                </div>
+                
+                <div class="user-card-stats">
+                    <span class="user-stat">
+                        <i class="fas fa-file-alt"></i> {{ user.posts|length }} posts
+                    </span>
+                </div>
+                
+                <div class="user-card-actions">
+                    <a href="{{ url_for('profile', username=user.username) }}" class="view-profile-btn">
+                        View Profile
+                    </a>
+                    {% if current_user.id != user.id %}
+                        <a href="{{ url_for('message_thread', user_id=user.id) }}" class="message-user-btn">
+                            <i class="fas fa-envelope"></i> Message
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="no-users">
+                <p>No users found{% if query %} matching "{{ query }}"{% endif %}.</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    {% if users.has_prev or users.has_next %}
+        <div class="pagination">
+            {% if users.has_prev %}
+                <a href="?q={{ query }}&page={{ users.prev_num }}" class="page-link">Previous</a>
+            {% endif %}
+            
+            {% for page_num in users.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if users.page == page_num %}
+                        <span class="current-page">{{ page_num }}</span>
+                    {% else %}
+                        <a href="?q={{ query }}&page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="ellipsis">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if users.has_next %}
+                <a href="?q={{ query }}&page={{ users.next_num }}" class="page-link">Next</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

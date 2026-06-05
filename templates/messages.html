@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - Nyapi{% endblock %}
+
+{% block content %}
+<div class="messages-container">
+    <div class="messages-header">
+
+        <div class="messages-actions">
+            <a href="{{ url_for('find_users') }}" class="new-message-btn">
+                <i class="fas fa-plus"></i> New Chat
+            </a>
+        </div>
+    </div>
+    
+    <div class="messages-list">
+        {% if threads %}
+            {% for thread in threads %}
+                <a href="{{ url_for('message_thread', user_id=thread.user.id) }}" class="message-thread">
+                    <div class="thread-avatar">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + thread.user.profile_pic) }}" 
+                             alt="{{ thread.user.username }}">
+                        {% if thread.unread %}
+                            <span class="unread-badge"></span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="thread-info">
+                        <div class="thread-header">
+                            <span class="thread-user">{{ thread.user.username }}</span>
+                            <span class="thread-time">
+    {{ thread.last_message.created_at | datetime_fr }}
+</span>
+                        </div>
+                        
+                        <div class="thread-preview">
+                            {% if thread.last_message.sender_id == current_user.id %}
+                                <strong>You:</strong>
+                            {% endif %}
+                            {{ thread.last_message.content[:50] }}{% if thread.last_message.content|length > 50 %}...{% endif %}
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <div class="no-messages">
+                <p>No messages yet.</p>
+                <a href="{{ url_for('find_users') }}" class="start-conversation-btn">
+                    <i class="fas fa-plus"></i> Start a conversation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

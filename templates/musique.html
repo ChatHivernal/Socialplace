@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% block title %}SocialZic{% endblock %}
+
+{% block content %}
+<center>
+<div class="logo-container">
+    <img src="../static/logo.png" alt="NyapiZic Logo" class="shaky-logo">
+</div>
+</center>
+
+<style>
+.logo-container {
+    position: relative;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.shaky-logo {
+    width: 150px; /* plus petit */
+    animation: shake 1.5s infinite; /* tremble moins vite */
+    display: inline-block;
+    position: relative;
+    z-index: 1;
+}
+
+/* Animation du logo */
+@keyframes shake {
+    0% { transform: translate(0px, 0px) rotate(0deg); }
+    10% { transform: translate(-1px, 1px) rotate(-1deg); }
+    20% { transform: translate(1px, -1px) rotate(1deg); }
+    30% { transform: translate(-1px, 1px) rotate(-1deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(0px, 0px) rotate(0deg); }
+    60% { transform: translate(-1px, 1px) rotate(-1deg); }
+    70% { transform: translate(1px, -1px) rotate(1deg); }
+    80% { transform: translate(-1px, 1px) rotate(-1deg); }
+    90% { transform: translate(1px, -1px) rotate(1deg); }
+    100% { transform: translate(0px, 0px) rotate(0deg); }
+}
+
+/* Notes de musique */
+.music-note {
+    position: absolute;
+    font-size: 16px;
+    animation: floatNote linear infinite;
+    pointer-events: none;
+    opacity: 0;
+}
+
+@keyframes floatNote {
+    0% { transform: translateY(0px) translateX(0px); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(-80px) translateX(calc(var(--x-offset, 0) * 1px)); opacity: 0; }
+}
+</style>
+
+<script>
+// Crée aléatoirement des notes autour du logo
+const logoContainer = document.querySelector('.logo-container');
+const notes = ['🎵','🎶','♪','♬'];
+
+function createNote() {
+    const note = document.createElement('div');
+    note.classList.add('music-note');
+    note.style.left = (50 + Math.random()*100 - 50) + '%'; // position aléatoire
+    note.style.setProperty('--x-offset', Math.random()*30-15); // décalage horizontal aléatoire
+    note.textContent = notes[Math.floor(Math.random()*notes.length)];
+    logoContainer.appendChild(note);
+
+    const duration = 2000 + Math.random()*1000;
+    note.style.animationDuration = duration + 'ms';
+
+    setTimeout(() => {
+        note.remove();
+    }, duration);
+}
+
+// Crée une note toutes les 400ms
+setInterval(createNote, 400);
+</script>
+
+<br>
+<h2 style="text-align:center;">🎵 SocialZic</h2>
+<br>
+<center><p><strong>Socialplace adore la musique que vous publiez ! Vous pouvez l’écouter ici !</strong></p>
+</center><br>
+
+<div class="music-feed">
+    {% for post in audio_posts %}
+        <div class="music-card" data-id="{{ post.id }}">
+            <div class="music-info">
+                <strong>{{ post.title }}</strong>
+                <span>by {{ post.author.username }}</span>
+            </div>
+            <button class="play-btn">
+                <i class="fas fa-play"></i>
+            </button>
+        </div>
+    {% else %}
+        <p>No music uploaded yet.</p>
+    {% endfor %}
+</div>
+
+
+<div id="global-player" class="global-player hidden">
+    
+    <div class="player-left">
+        <div id="player-title"></div>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div class="player-center">
+        <button id="prev-btn"><i class="fas fa-backward"></i></button>
+<button id="play-pause-btn"><i class="fas fa-pause"></i></button>
+<button id="next-btn"><i class="fas fa-forward"></i></button>
+    </div>
+
+    <div class="player-right">
+        <span style="margin-right:8px;"></span> 
+        <i class="fas fa-volume-down"></i>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01">
+    </div>
+
+</div>
+
+<style>
+body {
+    padding-bottom: 90px; /* évite que le lecteur fixe recouvre le contenu */
+}
+
+.music-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.music-card {
+    background: #1e1e1e;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.music-card:hover {
+    background: #2c2c2c;
+}
+
+.play-btn {
+    background: #ff6b82;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: white;
+    font-size: 16px;
+}
+
+.global-player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #111;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.6);
+    z-index: 999;
+}
+
+.hidden {
+    display: none;
+}
+
+.player-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#player-title {
+    font-weight: bold;
+    color: white;
+}
+
+.progress-container {
+    width: 100%;
+    height: 6px;
+    background: #333;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+}
+
+#progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #ff6b82;
+    border-radius: 4px;
+}
+
+.player-center button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    margin: 0 16px;
+    cursor: pointer;
+}
+
+.player-right {
+    display: flex;
+    align-items: center;
+}
+
+.player-right i {
+    margin-left: 8px; /* espace après span pour logo */
+}
+
+#volume-slider {
+    width: 100px;
+    margin-left: 8px; /* espace après icône */
+}
+</style>
+
+<script>
+let tracks = {
+    {% for track in audio_posts %}
+    "{{ track.id }}": {
+        title: {{ track.title|tojson }},
+        url: "{{ url_for('static', filename='uploads/posts/' + track.media_file) }}"
+    },
+    {% endfor %}
+};
+
+let trackOrder = Object.keys(tracks);
+let currentIndex = 0;
+if (!window.globalAudio) {
+    window.globalAudio = new Audio();
+    window.globalAudio.autoplay = true;
+}
+
+let audio = window.globalAudio;
+audio.autoplay = true;
+
+const player = document.getElementById("global-player");
+const titleEl = document.getElementById("player-title");
+const playPauseBtn = document.getElementById("play-pause-btn");
+const progressBar = document.getElementById("progress-bar");
+const progressContainer = document.querySelector(".progress-container");
+const volumeSlider = document.getElementById("volume-slider");
+
+/* ===== LOAD TRACK ===== */
+function loadTrackById(id) {
+    currentIndex = trackOrder.indexOf(id);
+    audio.src = tracks[id].url;
+    titleEl.textContent = tracks[id].title;
+    audio.play();
+    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    player.classList.remove("hidden");
+
+    localStorage.setItem("nyapizic_current_track", id); // ← ICI
+}
+
+/* ===== CONTROLS ===== */
+function nextTrack() {
+    currentIndex = (currentIndex - 1 + trackOrder.length) % trackOrder.length;
+    loadTrackById(trackOrder[currentIndex]);
+}
+
+function prevTrack() {
+    currentIndex = (currentIndex + 1) % trackOrder.length;
+    loadTrackById(trackOrder[currentIndex]);
+}
+
+audio.addEventListener("ended", nextTrack);
+
+document.querySelectorAll(".music-card").forEach((card) => {
+    card.querySelector(".play-btn").addEventListener("click", () => {
+        const id = card.dataset.id;
+        loadTrackById(id);
+    });
+});
+
+playPauseBtn.addEventListener("click", () => {
+    if (audio.paused) {
+        audio.play();
+        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    } else {
+        audio.pause();
+        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    }
+});
+
+document.getElementById("next-btn").addEventListener("click", nextTrack);
+document.getElementById("prev-btn").addEventListener("click", prevTrack);
+
+/* ===== PROGRESS BAR ===== */
+audio.addEventListener("timeupdate", () => {
+    const percent = (audio.currentTime / audio.duration) * 100;
+    progressBar.style.width = percent + "%";
+});
+
+progressContainer.addEventListener("click", (e) => {
+    const width = progressContainer.clientWidth;
+    const clickX = e.offsetX;
+    audio.currentTime = (clickX / width) * audio.duration;
+});
+
+/* ===== VOLUME ===== */
+let savedVolume = localStorage.getItem("nyapizic_volume");
+audio.volume = savedVolume ? savedVolume : 0.8;
+volumeSlider.value = audio.volume;
+
+volumeSlider.addEventListener("input", () => {
+    audio.volume = volumeSlider.value;
+    localStorage.setItem("nyapizic_volume", volumeSlider.value);
+});
+</script>
+
+{% endblock %}

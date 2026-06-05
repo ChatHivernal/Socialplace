@@ -1,0 +1,923 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }} - Nyapi{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+<div class="profile-avatar">
+    <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_pic) }}" 
+         alt="{{ user.username }}" class="profile-pic">
+
+    {% if user.scratch_profile_url %}
+        <a href="{{ user.scratch_profile_url }}" target="_blank" class="scratch-profile-btn">
+            <i class="fa-solid fa-at"></i> Scratch
+        </a>
+    {% endif %}
+
+    {% if current_user.id == user.id %}
+        <a href="{{ url_for('edit_profile') }}" class="edit-profile-btn">Edit Profile</a>
+    {% else %}
+        <a href="{{ url_for('message_thread', user_id=user.id) }}" class="send-message-btn">
+            <i class="fas fa-envelope"></i> Chat
+        </a>
+    {% endif %}
+</div>
+        
+        <div class="profile-info">
+            <h1 class="profile-username">
+    {{ user.username }}
+    {% if user.is_admin %}
+        <span class="admin-badge">
+            <i class="fas fa-shield-alt"></i> Admin
+        </span>
+    {% elif user.is_verified %}
+        <span class="verified-badge">
+            <i class="fas fa-check-circle"></i> Verified
+        </span>
+    {% endif %}
+
+
+</h1>
+            
+            <p class="profile-bio">{{ user.bio or "No bio yet." }}</p>
+            
+            
+            <div class="profile-stats">
+                <div class="stat">
+                    <span class="stat-number">{{ posts.total }}</span>
+                    <span class="stat-label">Posts</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">{{ user.created_at.strftime('%b %Y') }}</span>
+                    <span class="stat-label">Joined</span>
+                </div>
+
+
+                {% if current_user.id != user.id %}
+                <!--<div class="stat">
+                    <a href="{{ url_for('message_thread', user_id=user.id) }}" class="message-link">
+                        <i class="fas fa-envelope"></i> Message
+                    </a>
+                </div>-->
+                {% endif %}
+            </div>
+            
+            
+            <div class="content-stats">
+                {% set zip_count = posts.items|selectattr('media_type', 'equalto', 'zip')|list|length %}
+                {% set scratch_count = posts.items|selectattr('scratch_project_id')|list|length %}
+                {% set media_count = posts.items|rejectattr('media_type', 'equalto', None)|list|length %}
+                
+                <div class="content-stat">
+                    <i class="fas fa-image"></i>
+                    <span>{{ media_count }} media</span>
+                </div>
+                {% if zip_count > 0 %}
+                <div class="content-stat">
+                    <i class="fas fa-file-archive"></i>
+                    <span>{{ zip_count }} ZIP files</span>
+                </div>
+                {% endif %}
+                {% if scratch_count > 0 %}
+                <div class="content-stat">
+                    <i class="fas fa-gamepad"></i>
+                    <span>{{ scratch_count }} Scratch projects</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    
+    <div class="profile-filters">
+        <button class="filter-btn active" data-filter="all">All Posts</button>
+        <button class="filter-btn" data-filter="zip">ZIP Files</button>
+        <button class="filter-btn" data-filter="scratch">Scratch Projects</button>
+        <button class="filter-btn" data-filter="media">Media Posts</button>
+    </div>
+    
+    <div class="profile-posts">
+        <h2>Posts by {{ user.username }}</h2>
+        
+        {% if posts.items %}
+            <div class="posts-grid">
+                {% for post in posts.items %}
+                    <div class="user-post-card" 
+                         data-type="{% if post.media_type == 'zip' %}zip{% elif post.scratch_project_id %}scratch{% elif post.media_type %}media{% else %}text{% endif %}">
+                        <div class="post-card-header">
+                            <h3 class="post-title">
+                                <a href="{{ url_for('post_detail', post_id=post.id) }}">{{ post.title }}</a>
+                            </h3>
+                            <span class="post-time">{{ post.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        
+                        <p class="post-excerpt">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
+                        
+                        
+                        <div class="post-type-indicators">
+                            {% if post.media_type == 'zip' %}
+                                <span class="content-badge zip-badge">
+                                    <i class="fas fa-file-archive"></i> ZIP File
+                                </span>
+                            {% elif post.scratch_project_id %}
+                                <span class="content-badge scratch-badge">
+                                    <i class="fas fa-gamepad"></i> Scratch Project
+                                </span>
+                            {% elif post.media_type == 'image' %}
+                                <span class="content-badge image-badge">
+                                    <i class="fas fa-image"></i> Image
+                                </span>
+                            {% elif post.media_type == 'video' %}
+                                <span class="content-badge video-badge">
+                                    <i class="fas fa-video"></i> Video
+                                </span>
+                            {% elif post.media_type == 'audio' %}
+                                <span class="content-badge audio-badge">
+                                    <i class="fas fa-music"></i> Audio
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        
+                        {% if post.media_file %}
+                            <div class="post-media-preview">
+                                {% if post.media_type == 'image' %}
+                                    <img src="{{ url_for('static', filename='uploads/posts/' + post.media_file) }}"
+                                         class="preview-image">
+                                
+                                {% elif post.media_type == 'video' %}
+                                    <div class="video-preview">
+                                        <i class="fas fa-play-circle"></i>
+                                        <video class="preview-video" muted>
+                                            <source src="{{ url_for('static', filename='uploads/posts/' + post.media_file) }}">
+                                        </video>
+                                    </div>
+                                
+                                {% elif post.media_type == 'audio' %}
+                                    <div class="audio-preview">
+                                        <i class="fas fa-music"></i>
+                                        <span>Audio file</span>
+                                    </div>
+                                
+                                {% elif post.media_type == 'zip' %}
+                                    <div class="zip-preview-profile">
+                                        <div class="zip-preview-content">
+                                            <i class="fas fa-file-archive zip-icon-large"></i>
+                                            <div class="zip-info">
+                                                <span class="zip-name">
+                                                    {% set filename = post.media_file %}
+                                                    {% if filename.startswith('static/uploads/posts/') %}
+                                                        {{ filename|replace('static/uploads/posts/', '') }}
+                                                    {% else %}
+                                                        {{ filename }}
+                                                    {% endif %}
+                                                </span>
+                                                <small>Click to download</small>
+                                            </div>
+                                            <a href="{{ url_for('download_zip', post_id=post.id) }}" 
+                                               class="download-btn-small" 
+                                               title="Download ZIP">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        
+                        {% if post.scratch_project_id %}
+                            <div class="scratch-preview-profile">
+                                <div class="scratch-preview-content">
+                                    <div class="scratch-thumbnail">
+                                        <i class="fas fa-gamepad"></i>
+                                    </div>
+                                    <div class="scratch-info">
+                                        <h4>Scratch Project</h4>
+                                        <p>Interactive project</p>
+                                        <a href="{{ url_for('post_detail', post_id=post.id) }}" 
+                                           class="play-scratch-btn">
+                                            <i class="fas fa-play"></i> Play
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="post-meta">
+                            <span class="post-comments">
+                                <i class="fas fa-comment"></i> {{ post.comments|length }}
+                            </span>
+                            <span class="post-likes">
+                                <i class="fas fa-thumbs-up"></i> {{ post.likes|length }}
+                            </span>
+                            <span class="post-dislikes">
+                                <i class="fas fa-thumbs-down"></i> {{ post.dislikes|length }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            
+            <div class="pagination">
+                {% if posts.has_prev %}
+                    <a href="?page={{ posts.prev_num }}" class="page-link">Previous</a>
+                {% endif %}
+                
+                {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if posts.page == page_num %}
+                            <span class="current-page">{{ page_num }}</span>
+                        {% else %}
+                            <a href="?page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span class="ellipsis">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if posts.has_next %}
+                    <a href="?page={{ posts.next_num }}" class="page-link">Next</a>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="no-posts">
+                <i class="fas fa-newspaper"></i>
+                <p>No posts yet.</p>
+                {% if current_user.id == user.id %}
+                    <a href="{{ url_for('create_post') }}" class="create-first-post">Create your first post</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.profile-header {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+    background: linear-gradient(135deg, #2c2233, #3a2d44);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.profile-avatar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-pic {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid #ff6b35;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.edit-profile-btn,
+.send-message-btn {
+    display: block;
+    margin-top: 15px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.edit-profile-btn:hover,
+.send-message-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.profile-info {
+    flex-grow: 1;
+}
+
+.profile-username {
+    margin: 0 0 10px 0;
+    color: #fff;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-badge {
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.profile-bio {
+    color: #ccc;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    text-align: center;
+}
+
+ 
+
+.scratch-profile-btn {
+    position: absolute;
+    top: 5px;       
+    right: 5px;     
+    padding: 4px 10px;  
+    font-size: 0.8rem;  
+    background: linear-gradient(135deg, #4d7cff, #6b9aff);
+    color: white;
+    border-radius: 50px; /* bouton arrondi comme un badge */
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+
+.scratch-profile-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(77,124,255,0.5);
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ff6b35;
+}
+
+.stat-label {
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.message-link {
+    color: #ff6b35;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.3s;
+}
+
+.message-link:hover {
+    color: #ff8e53;
+}
+
+.content-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border-left: 4px solid #4d7cff;
+}
+
+.content-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+}
+
+.content-stat i {
+    color: #ff6b35;
+}
+
+/* Filtres */
+.profile-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 10px 20px;
+    background: #3a2d44;
+    color: #ccc;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+}
+
+.filter-btn:hover:not(.active) {
+    background: #4a3c5a;
+    color: white;
+}
+
+/* Grid des posts */
+.posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.user-post-card {
+    background: linear-gradient(135deg, #2c2233, #3a2d44);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    border: 1px solid #4a3c5a;
+    position: relative;
+    overflow: hidden;
+}
+
+.user-post-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: #ff6b35;
+}
+
+.post-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.post-title {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.post-title a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.post-title a:hover {
+    color: #ff6b35;
+}
+
+.post-time {
+    color: #aaa;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.post-excerpt {
+    color: #ccc;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+/* Badges de type de contenu */
+.post-type-indicators {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.content-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+}
+
+.zip-badge {
+    background: rgba(255, 107, 53, 0.2);
+    color: #ff6b35;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.scratch-badge {
+    background: rgba(77, 124, 255, 0.2);
+    color: #4d7cff;
+    border: 1px solid rgba(77, 124, 255, 0.3);
+}
+
+.image-badge {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.video-badge {
+    background: rgba(156, 39, 176, 0.2);
+    color: #9C27B0;
+    border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.audio-badge {
+    background: rgba(255, 193, 7, 0.2);
+    color: #FFC107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Aperçu ZIP */
+.zip-preview-profile {
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    border: 1px dashed rgba(255, 107, 53, 0.3);
+}
+
+.zip-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.zip-icon-large {
+    font-size: 2.5rem;
+    color: #ff6b35;
+}
+
+.zip-info {
+    flex-grow: 1;
+}
+
+.zip-name {
+    display: block;
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 5px;
+    word-break: break-all;
+}
+
+.zip-info small {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+.download-btn-small {
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.download-btn-small:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* Aperçu Scratch */
+.scratch-preview-profile {
+    background: rgba(77, 124, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    border: 1px dashed rgba(77, 124, 255, 0.3);
+}
+
+.scratch-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.scratch-thumbnail {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #4d7cff, #6b9aff);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+}
+
+.scratch-info {
+    flex-grow: 1;
+}
+
+.scratch-info h4 {
+    margin: 0 0 5px 0;
+    color: #fff;
+}
+
+.scratch-info p {
+    margin: 0 0 10px 0;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.play-scratch-btn {
+    background: linear-gradient(135deg, #4d7cff, #6b9aff);
+    color: white;
+    padding: 6px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+.play-scratch-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(77, 124, 255, 0.3);
+}
+
+/* Aperçu média */
+.post-media-preview {
+    margin: 15px 0;
+}
+
+.preview-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.video-preview {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+}
+
+.video-preview i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: white;
+    opacity: 0.8;
+    z-index: 2;
+}
+
+.preview-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.7;
+}
+
+.audio-preview {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 193, 7, 0.3);
+}
+
+.audio-preview i {
+    font-size: 2rem;
+    color: #FFC107;
+}
+
+.audio-preview span {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Meta des posts */
+.post-meta {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #4a3c5a;
+}
+
+.post-comments,
+.post-likes,
+.post-dislikes {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.post-comments i,
+.post-likes i,
+.post-dislikes i {
+    color: #ff6b35;
+}
+
+/* Pas de posts */
+.no-posts {
+    text-align: center;
+    padding: 60px 20px;
+    color: #aaa;
+}
+
+.no-posts i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    color: #4a3c5a;
+}
+
+.no-posts p {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+.create-first-post {
+    display: inline-block;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.create-first-post:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 40px;
+}
+
+.page-link,
+.current-page {
+    padding: 10px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.page-link {
+    background: #3a2d44;
+    color: #ccc;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background: #4a3c5a;
+    color: white;
+}
+
+.current-page {
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+}
+
+.ellipsis {
+    padding: 10px;
+    color: #aaa;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .profile-stats {
+        justify-content: center;
+    }
+    
+    .content-stats {
+        justify-content: center;
+    }
+    
+    .posts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .zip-preview-content,
+    .scratch-preview-content {
+        flex-wrap: wrap;
+    }
+    
+    .zip-info,
+    .scratch-info {
+        text-align: center;
+        width: 100%;
+    }
+    
+    .download-btn-small {
+        margin: 10px auto 0;
+    }
+    
+    .play-scratch-btn {
+        display: block;
+        text-align: center;
+        margin-top: 10px;
+    }
+}
+</style>
+
+<script>
+// Filtrage des posts par type
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const postCards = document.querySelectorAll('.user-post-card');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Retirer la classe active de tous les boutons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Ajouter la classe active au bouton cliqué
+            this.classList.add('active');
+            
+            const filter = this.getAttribute('data-filter');
+            
+            // Filtrer les posts
+            postCards.forEach(card => {
+                const type = card.getAttribute('data-type');
+                
+                if (filter === 'all' || type === filter) {
+                    card.style.display = 'block';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 10);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 300);
+                }
+            });
+        });
+    });
+    
+    // Animation au chargement
+    setTimeout(() => {
+        postCards.forEach((card, index) => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 50);
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

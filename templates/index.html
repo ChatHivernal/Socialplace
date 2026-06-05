@@ -1,0 +1,652 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Socialplace{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="content-wrapper">
+        <div class="posts-section">
+            <div class="section-header">
+                <h1>{% if following %}Following{% else %}Recents Posts{% endif %}</h1>            </div>
+
+
+
+
+
+
+ <div class="section-header">
+                {% if following %}<a href="{{ url_for('index') }}" class="create-post-btn">
+                        <i class="fas fa-globe"></i> Go to Public feed
+                    </a>{% else %}<a href="{{ url_for('following') }}" class="create-post-btn">
+                        <i class="fas fa-heart"></i> Go to Personal feed
+                    </a>{% endif %}           </div>
+
+            
+            {% for post in posts.items %}
+            <div class="post-card">
+{% if post.media_type == 'audio' and post.audio_duration >= 30 %}
+    <a href="{{ url_for('music') }}?post_id={{ post.id }}" class="listen-nyapizic-btn">
+        🎵More music on SocialZic
+    </a>
+{% endif %}
+                <div class="post-header">
+                  <a href="{{ url_for('profile', username=post.author.username) }}">   <img src="{{ url_for('static', filename='uploads/profiles/' + post.author.profile_pic) }}"
+     alt="{{ post.author.username }}" class="post-profile-pic">
+</a>
+
+                    <div class="post-author-info">
+                        <a href="{{ url_for('profile', username=post.author.username) }}" class="post-author">
+                            {{ post.author.username }}
+                        </a>
+                       <span class="post-time">
+    {{ post.created_at | datetime_fr }}
+</span>
+                    </div>
+                </div>
+                
+                <div class="post-body">
+                    <h3 class="post-title">
+                        <a href="{{ url_for('post_detail', post_id=post.id) }}">{{ post.title }}</a>
+                    </h3>
+
+                    <p class="post-content">{{ post.content }}</p>
+                    
+                    
+                    {% if post.media_file %}
+                    <div class="post-media">
+                        {% if post.media_type == 'image' %}
+                            <img src="{{ url_for('static', filename='uploads/posts/' + post.media_file) }}"
+                                 alt="Post media" class="post-image">
+                        
+                        {% elif post.media_type == 'video' %}
+                            <video controls class="post-video">
+                                <source src="{{ url_for('static', filename='uploads/posts/' + post.media_file) }}">
+                                Your browser does not support the video tag.
+                            </video>
+                        
+                        {% elif post.media_type == 'audio' %}
+                            <audio controls class="post-audio">
+                                <source src="{{ url_for('static', filename='uploads/posts/' + post.media_file) }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        
+                        {% elif post.media_type == 'zip' %}
+                            
+                            <div class="zip-preview">
+                                <div class="zip-preview-content">
+                                    <i class="fas fa-file-archive zip-icon"></i>
+                                    <div class="zip-info">
+                                        <span class="zip-filename">
+                                            {% if post.media_file.startswith('static/uploads/posts/') %}
+                                                {{ post.media_file|replace('static/uploads/posts/', '')|truncate(30) }}
+                                            {% else %}
+                                                {{ post.media_file|truncate(30) }}
+                                            {% endif %}
+                                        </span>
+                                        <small>ZIP Archive • Click Download to get the file</small>
+                                    </div>
+                                    <a href="{{ url_for('download_zip', post_id=post.id) }}" class="download-preview-btn" title="Download ZIP">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    
+                    {% if post.scratch_project_id %}
+                    <div class="scratch-preview">
+                        <div class="scratch-preview-content">
+                            <i class="fas fa-gamepad"></i>
+                            <div class="scratch-info">
+                                <span>Interactive Scratch Project</span>
+                                <small>Embedded game or animation</small>
+                            </div>
+                            <a href="{{ url_for('post_detail', post_id=post.id) }}" class="view-scratch-btn">
+                                Play Now
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="post-stats">
+                        <div class="like-section">
+                            <button class="like-btn {% if post.id in liked_posts %}liked{% endif %}" 
+                                    data-post-id="{{ post.id }}">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span class="like-count">{{ post.likes|length }}</span>
+                            </button>
+                            <button class="dislike-btn {% if post.id in disliked_posts %}disliked{% endif %}" 
+                                    data-post-id="{{ post.id }}">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span class="dislike-count">{{ post.dislikes|length }}</span>
+                            </button>
+                        </div>
+                        <a href="{{ url_for('post_detail', post_id=post.id) }}" class="comment-link">
+                            <i class="fas fa-comment"></i>
+                            {{ post.comments|length }} comments
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            
+            <div class="pagination">
+                {% if posts.has_prev %}
+                    <a href="?page={{ posts.prev_num }}" class="page-link">Previous</a>
+                {% endif %}
+                
+                {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if posts.page == page_num %}
+                            <span class="current-page">{{ page_num }}</span>
+                        {% else %}
+                            <a href="?page={{ page_num }}" class="page-link">{{ page_num }}</a>
+                        {% endif %}
+                    {% else %}
+                        <span class="ellipsis">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if posts.has_next %}
+                    <a href="?page={{ posts.next_num }}" class="page-link">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        
+        
+        <div class="sidebar">
+            {% if current_user.is_authenticated %}
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h3>Create Post</h3>
+                </div>
+                <div class="sidebar-card-content">
+                    <p>Share your thoughts or upload content</p>
+                    <a href="{{ url_for('create_post') }}" class="create-post-btn">
+                        <i class="fas fa-plus"></i> New Post
+                    </a>
+                    <p class="upload-tips">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            Now supports: Images, Videos, Audio, ZIP files & Scratch projects
+                        </small>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+            
+
+
+                     {% if active_users %}
+              <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h3>Recents Users <br><small><a href="/find_users">All users</a></small></h3>
+                </div>
+                <div class="active-users">
+                    {% for user in active_users %}
+           <a href="{{ url_for('profile', username=user.username) }}" class="active-user">
+    <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_pic) }}" 
+         alt="{{ user.username }}" class="user-avatar">
+    <span>{{ user.username }}</span>
+    {% if user.is_admin %}
+        <span class="admin-badge-small">
+            <i class="fas fa-shield-alt"></i>
+        </span>
+    {% elif user.is_verified %}
+        <span class="verified-badge-small">
+            <i class="fas fa-check-circle"></i>
+        </span>
+    {% endif %}
+</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+                     
+            
+            
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+  <style>
+a {color: #ff6b82;}
+</style>
+<style>
+/* Styles pour les prévisualisations ZIP */
+.zip-preview {
+    background: linear-gradient(135deg, #2c2233, #3a2d44);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-left: 4px solid #ff6b35;
+    border: 1px solid #4a3c5a;
+}
+
+.zip-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+}
+
+.zip-icon {
+    color: #ff6b35;
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.zip-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.zip-filename {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.25rem;
+    word-break: break-all;
+}
+
+.zip-info small {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+.download-preview-btn {
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.download-preview-btn:hover {
+    background: linear-gradient(135deg, #ff8e53, #ff6b35);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* Styles pour les prévisualisations Scratch */
+.scratch-preview {
+    background: linear-gradient(135deg, #1a1f2e, #2a2f3e);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-left: 4px solid #4d7cff;
+    border: 1px solid #4a5c7a;
+}
+
+.scratch-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+}
+
+.scratch-preview-content i {
+    color: #4d7cff;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.scratch-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.scratch-info span {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.scratch-info small {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+.view-scratch-btn {
+    background: linear-gradient(135deg, #4d7cff, #6b9aff);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.view-scratch-btn:hover {
+    background: linear-gradient(135deg, #6b9aff, #4d7cff);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(77, 124, 255, 0.3);
+}
+
+/* Styles pour les cartes de fonctionnalités */
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.feature-item:last-child {
+    margin-bottom: 0;
+}
+
+.feature-icon {
+    font-size: 1.5rem;
+    color: #ff6b35;
+    background: rgba(255, 107, 53, 0.1);
+    padding: 0.75rem;
+    border-radius: 50%;
+}
+
+.feature-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: #fff;
+    font-size: 0.95rem;
+}
+.post-card {
+    position: relative; /* nécessaire pour le bouton positionné absolument */
+    padding: 16px;
+    background-color: #2c2233;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.listen-nyapizic-btn {
+    position: absolute;
+    top: 10px;      /* distance du haut de la carte */
+    right: 10px;    /* distance de la droite de la carte */
+    display: inline-block;
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.listen-nyapizic-btn:hover {
+    background: linear-gradient(135deg, #ff8e53, #ff6b35);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.feature-info p {
+    margin: 0;
+    color: #aaa;
+    font-size: 0.85rem;
+}
+
+/* Styles existants */
+.post-media {
+    margin: 1rem 0;
+}
+
+.post-media img,
+.post-media video,
+.post-media audio {
+    max-width: 100%;
+    border-radius: 8px;
+    display: block;
+}
+
+.post-media audio {
+    width: 100%;
+}
+
+/* Sidebar styles */
+.sidebar {
+    width: 300px;
+    flex-shrink: 0;
+}
+
+.sidebar-card {
+    background-color: #2c2233;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.sidebar-card-header {
+    margin-bottom: 12px;
+    border-bottom: 1px solid #4a3c5a;
+    padding-bottom: 8px;
+}
+
+.sidebar-card-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: #fff;
+}
+
+.sidebar-card-content p {
+    font-size: 0.9em;
+    color: #ccc;
+    margin-bottom: 12px;
+}
+
+.upload-tips {
+    margin-top: 10px !important;
+    padding: 8px;
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #ff6b35;
+}
+
+.upload-tips small {
+    color: #ff8e53 !important;
+}
+
+.sidebar-card .tag {
+    display: inline-block;
+    text-decoration: none;
+    background-color: #ff6b6b;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+    margin: 4px 0;
+}
+
+.sidebar-card .tag:hover {
+    background-color: #ff4c4c;
+}
+
+.create-post-btn {
+    display: block;
+    text-align: center;
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.create-post-btn:hover {
+    background: linear-gradient(135deg, #ff8e53, #ff6b35);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.active-users {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.active-user {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.active-user:hover {
+    background-color: #3a2d44;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.admin-badge-small {
+    margin-left: auto;
+    color: #ff6b35;
+    font-size: 0.8em;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .content-wrapper {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .zip-preview-content,
+    .scratch-preview-content {
+        flex-wrap: wrap;
+    }
+    
+    .download-preview-btn,
+    .view-scratch-btn {
+        margin-top: 0.5rem;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Animation pour les nouvelles fonctionnalités */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.feature-item {
+    animation: pulse 2s infinite;
+}
+
+.feature-item:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+/* Messages d'erreur/success */
+.flash-messages {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.flash-message {
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    color: white;
+    animation: slideIn 0.3s ease;
+}
+
+.flash-message.success {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border-left: 4px solid #2E7D32;
+}
+
+.flash-message.error {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    border-left: 4px solid #b71c1c;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+.listen-nyapizic-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary-orange), var(--primary-pink));
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.listen-nyapizic-btn:hover {
+    background: linear-gradient(135deg, var(--primary-pink), var(--primary-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+</style>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const downloadButtons = document.querySelectorAll('.download-preview-btn');
+    
+    downloadButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            
+            const originalHTML = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+            this.style.opacity = '0.7';
+            
+            
+            setTimeout(() => {
+                this.innerHTML = originalHTML;
+                this.style.opacity = '1';
+            }, 3000);
+        });
+    });
+});
+</script>
+{% endblock %}

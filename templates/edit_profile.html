@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - Nyapi{% endblock %}
+
+{% block content %}
+<div class="edit-profile-container">
+    <div class="edit-profile-card">
+        <h2>Edit Profile</h2>
+        <form method="POST" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data" class="profile-form">
+            <div class="current-avatar">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_pic) }}" 
+                     alt="Current avatar" class="current-avatar-img">
+                <p>Current profile picture</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="profile_pic">Change Profile Picture</label>
+                <input type="file" id="profile_pic" name="profile_pic" accept="image/*">
+                <small>Max size: 5MB. Formats: JPG, PNG, GIF</small>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="remove_pic" value="1">
+                    Use default avatar
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="bio">Bio</label>
+                <textarea id="bio" name="bio" rows="4" placeholder="Tell us about yourself...">{{ current_user.bio }}</textarea>
+            </div>
+
+            <div class="form-group">
+                {% if current_user.scratch_username %}
+                    <label>Scratch Account</label>
+                    <p>
+                        Linked as 
+                        <a href="{{ current_user.scratch_profile_url }}" target="_blank">
+                            {{ current_user.scratch_username }}
+                        </a>
+                    </p>
+                    <a href="{{ url_for('scratch_login') }}" class="link-scratch-btn">Relink Scratch Account</a>
+                {% else %}
+                    <label>Scratch Account</label>
+                    <a href="{{ url_for('scratch_login') }}" class="link-scratch-btn">Link Your Scratch Account</a>
+                {% endif %}
+            </div>
+
+            <div class="form-section">
+                <h3>Change Password</h3>
+                <p class="section-note">Leave blank to keep current password</p>
+                
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    <input type="password" id="current_password" name="current_password" placeholder="Enter current password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" placeholder="Enter new password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password">Confirm New Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="save-btn">Save Changes</button>
+                <a href="{{ url_for('profile', username=current_user.username) }}" class="cancel-btn">Cancel</a>
+            </div>
+        </form>
+
+        
+        <div class="form-section delete-account-section">
+            <h3>Delete Account</h3>
+            <p class="section-note danger-note">
+                ⚠️ Warning: This will delete your entire account as if you had never existed.
+            </p>
+            
+            <button type="button" id="showDeleteModalBtn" class="delete-account-btn">
+                Delete My Account
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div id="deleteAccountModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Confirm Account Deletion</h3>
+        <p>This action is <strong>irreversible</strong>. You will lose:</p>
+        <ul>
+            <li>All your posts and comments</li>
+            <li>All your messages</li>
+            <li>All your likes and dislikes</li>
+            <li>Your profile picture and bio</li>
+        </ul>
+        <p>Please enter your password to confirm:</p>
+        <form method="POST" action="{{ url_for('delete_account') }}" id="deleteAccountForm">
+            <input type="password" name="password" placeholder="Your password" required class="modal-input">
+            <div class="modal-buttons">
+                <button type="submit" class="confirm-delete-btn">Confirm Deletion</button>
+                <button type="button" class="cancel-delete-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.edit-profile-container {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.edit-profile-card {
+    background: #2c2233;
+    padding: 30px;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.edit-profile-card h2 {
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    color: #ccc;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.form-group input[type="file"],
+.form-group textarea,
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #3a2d44;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.form-group small {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.save-btn {
+    background: linear-gradient(135deg, #ff6b35, #ff8e53);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.cancel-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #3a2d44;
+    color: #ccc;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: #4a3c5a;
+    color: white;
+}
+
+.current-avatar-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #ff6b35;
+    margin-bottom: 10px;
+}
+
+.link-scratch-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #4d7cff, #6b9aff);
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-top: 5px;
+}
+
+.link-scratch-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(77, 124, 255, 0.3);
+}
+
+.form-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #4a3c5a;
+}
+
+.form-section h3 {
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.section-note {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+/* Delete Account Section */
+.delete-account-section {
+    border-top-color: #ff4444;
+    margin-top: 30px;
+}
+
+.delete-account-btn {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.delete-account-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+}
+
+.danger-note {
+    color: #ff8888;
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: #2c2233;
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+    color: #fff;
+    margin-bottom: 15px;
+}
+
+.modal-content p {
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
+.modal-content ul {
+    color: #ccc;
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #3a2d44;
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.modal-input:focus {
+    outline: none;
+    border: 1px solid #ff6b35;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.confirm-delete-btn {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.confirm-delete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+}
+
+.cancel-delete-btn {
+    background: #3a2d44;
+    color: #ccc;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-delete-btn:hover {
+    background: #4a3c5a;
+    color: white;
+}
+
+.close-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+    color: #fff;
+}
+</style>
+
+<script>
+// Gestion du modal de suppression
+const modal = document.getElementById('deleteAccountModal');
+const showBtn = document.getElementById('showDeleteModalBtn');
+const closeBtn = document.getElementsByClassName('close-modal')[0];
+const cancelBtn = document.getElementsByClassName('cancel-delete-btn')[0];
+
+if (showBtn) {
+    showBtn.onclick = function() {
+        modal.style.display = 'flex';
+    }
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    const form = document.getElementById('deleteAccountForm');
+    if (form) {
+        form.reset();
+    }
+}
+
+if (closeBtn) {
+    closeBtn.onclick = closeModal;
+}
+
+if (cancelBtn) {
+    cancelBtn.onclick = closeModal;
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+
+// Empêcher la soumission multiple du formulaire de suppression
+const deleteForm = document.getElementById('deleteAccountForm');
+if (deleteForm) {
+    deleteForm.onsubmit = function() {
+        const submitBtn = this.querySelector('.confirm-delete-btn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Deleting...';
+        }
+        return true;
+    }
+}
+</script>
+{% endblock %}

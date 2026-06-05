@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel • Nyapi{% endblock %}
+
+{% block content %}
+<section class="admin-section">
+    <h2><i class="fas fa-comments"></i> Tous les commentaires</h2>
+
+    {% if comments %}
+        <ul class="admin-list">
+        {% for comment in comments %}
+            <li>
+                <span>
+                    <strong>
+                        <a href="{{ url_for('profile', username=comment.author.username) }}">
+                            {{ comment.author.username }}
+                        </a>
+                    </strong>
+                    — {{ comment.content[:80] }}{% if comment.content|length > 80 %}…{% endif %}
+                    <small>({{ comment.created_at.strftime('%d/%m/%Y %H:%M') }})</small>
+                </span>
+                <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="post" onsubmit="return confirm('Supprimer ce commentaire ?');">
+                    <button class="btn-danger">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucun commentaire.</p>
+    {% endif %}
+</section>
+
+{% endblock %}

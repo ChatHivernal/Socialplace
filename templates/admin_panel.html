@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel • Nyapi{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">
+    <i class="fas fa-shield-alt"></i> Admin Panel
+</h1>
+
+
+
+
+
+<style>
+td {
+  background-color: lightblue;
+}
+
+ul {
+  background-color: lightblue;
+}
+</style>
+<br>
+Pour bannir un utilisateur dans sqlite3 (remplacer [id] par l'id user) : <br>
+DELETE FROM message WHERE sender_id = [id] OR receiver_id = [id];
+<br>DELETE FROM like WHERE user_id = [id];
+<br>DELETE FROM dislike WHERE user_id = [id];
+<br>DELETE FROM comment WHERE user_id = [id];
+<br>DELETE FROM post WHERE user_id = [id];
+<br>DELETE FROM block WHERE blocker_id = [id] OR blocked_id = [id];
+
+<br>DELETE FROM user WHERE id = [id];
+
+<br><br>
+
+<section class="admin-section">
+    <h2><i class="fas fa-users"></i> Rechercher un utilisateur</h2>
+    <form method="get" action="{{ url_for('admin_panel') }}" class="search-box">
+        <input type="text" name="user_q" placeholder="Nom d'utilisateur ou ID" value="{{ user_q or '' }}" required>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Rechercher</button>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Réinitialiser</a>
+    </form>
+
+    {% if searched_user %}
+        <h3>Résultat</h3>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Admin</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ searched_user.id }}</td>
+                    <td>
+                        <a href="{{ url_for('profile', username=searched_user.username) }}">
+                            {{ searched_user.username }}
+                        </a>
+                    </a>
+                    </td>
+                    <td>{{ searched_user.get_email() }}</td>
+                    <td>
+                        {% if searched_user.is_admin %}
+                            <span style="color: green; font-weight: bold;">✔</span>
+                        {% else %}
+                            ❌
+                        {% endif %}
+                    </a>
+                    </a>
+                    <td>
+                        {% if searched_user.id != current_user.id %}
+                            
+                          
+                            
+                            <form action="{{ url_for('admin_impersonate', user_id=searched_user.id) }}" method="post" style="display:inline;">
+                                <button class="btn-secondary">Login as</button>
+                            </form>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    {% elif user_q %}
+        <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px;">
+            Aucun utilisateur trouvé pour "{{ user_q }}".
+        </p>
+    {% endif %}
+</section>
+
+<hr>
+
+
+<section class="admin-section">
+    <h2><i class="fas fa-file-alt"></i> Rechercher un post</h2>
+    <form method="get" action="{{ url_for('admin_panel') }}" class="search-box">
+        <input type="text" name="post_q" placeholder="ID du post" value="{{ post_q or '' }}" required>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Rechercher</button>
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">Réinitialiser</a>
+    </form>
+
+    {% if searched_post %}
+        <h3>Résultat</h3>
+        <ul class="admin-list">
+            <li>
+                <span>
+                    <strong>
+                        <a href="{{ url_for('profile', username=searched_post.author.username) }}">
+                            {{ searched_post.author.username }}
+                        </a>
+                    </strong>
+                    — {{ searched_post.title }}
+                    <small>({{ searched_post.created_at.strftime('%d/%m/%Y %H:%M') }})</small>
+                </span>
+                <form action="{{ url_for('delete_post', post_id=searched_post.id) }}" method="post" onsubmit="return confirm('Supprimer ce post ?');">
+                    <button class="btn-danger">Delete</button>
+                </form>
+            </li>
+        </ul>
+    {% elif post_q %}
+        <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px;">
+            Aucun post trouvé avec l'ID "{{ post_q }}".
+        </p>
+    {% endif %}
+</section>
+
+<hr>
+
+<br><br>
+<a href="/uwucom" style="color: blue";>voir les commentaires (sa lag lol)</a>
+
+{% endblock %}

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ other_user.username }} - Nyapi{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <a href="{{ url_for('messages') }}" class="back-to-messages">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <div class="chat-user">
+            <a href="{{ url_for('profile', username=other_user.username) }}">
+                <img src="{{ url_for('static', filename='uploads/profiles/' + other_user.profile_pic) }}"
+                     alt="{{ other_user.username }}" class="chat-avatar">
+            </a>
+            <span>
+                <a href="{{ url_for('profile', username=other_user.username) }}" class="post-author">
+                    {{ other_user.username }}
+                </a>
+            </span>
+        </div>
+        <div class="chat-actions">
+            <button class="block-user-btn {% if is_blocked %}blocked{% endif %}" 
+                    onclick="toggleBlockUser({{ other_user.id }}, '{{ other_user.username }}')"
+                    title="{% if is_blocked %}Unblock{% else %}Block{% endif %} user">
+                <i class="fas {% if is_blocked %}fa-user-check{% else %}fa-user-slash{% endif %}"></i>
+                <span class="btn-text">{% if is_blocked %}Unblock{% else %}Block{% endif %}</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="chat-messages" id="chat-messages">
+        {% if is_blocked_by %}
+            <div class="blocked-notice">
+                <p><i class="fas fa-ban"></i>
+                You have been blocked by this user. You cannot send messages.</p>
+            </div>
+        {% endif %}
+        
+        {% if has_more %}
+        <div class="load-more" id="load-more">
+            <button id="load-older-btn" class="load-older-btn">
+                <i class="fas fa-arrow-up"></i> Load older messages
+            </button>
+        </div>
+        {% endif %}
+        
+        {% for message in messages %}
+            <div class="message {% if message.sender_id == current_user.id %}sent{% else %}received{% endif %}"
+                 data-message-id="{{ message.id }}">
+                <div class="message-content">
+                    {{ message.content|replace('\n', '<br>')|safe }}
+                </div>
+                <div class="message-time">{{ message.created_at | datetime_fr }}</div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <form method="POST" action="{{ url_for('message_thread', user_id=other_user.id) }}" class="chat-form" id="chat-form">
+        <div class="message-input-container">
+            <textarea name="content" placeholder="🔒Messages are encrypted" 
+                     id="message-input"
+                     {% if is_blocked or is_blocked_by %}disabled{% endif %}></textarea>
+            <button type="submit" class="send-btn" {% if is_blocked or is_blocked_by %}disabled{% endif %}>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    // On attend que la page soit complètement chargée ET que le script global ait fini son initialisation.
+    window.addEventListener('load', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+
+        // === 1. SCROLL INITIAL FIABLE ===
+        if (chatMessages) {
+            // Forcer le scroll en bas après que tout soit rendu (images, polices, etc.)
+            const scrollToBottom = function() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+            // Premier essai après le chargement de la page
+            setTimeout(scrollToBottom, 100);
+            // Second essai un peu plus tard pour être certain
+            setTimeout(scrollToBottom, 400);
+        }
+
+        // Focus sur le champ de saisie (s'il n'est pas désactivé)
+        if (messageInput && !messageInput.disabled) {
+            setTimeout(() => messageInput.focus(), 500);
+        }
+
+        // === 2. CHARGEMENT DES ANCIENS MESSAGES ===
+        let isLoading = false;
+        let hasMore = {{ 'true' if has_more else 'false' }};
+        const loadMoreBtn = document.getElementById('load-older-btn');
+
+        function loadOlderMessages() {
+            if (isLoading || !hasMore) return;
+            isLoading = true;
+            if (loadMoreBtn) loadMoreBtn.disabled = true;
+
+            const oldestMsg = chatMessages.querySelector('.message[data-message-id]');
+            if (!oldestMsg) { isLoading = false; return; }
+            const beforeId = oldestMsg.dataset.messageId;
+
+            fetch(`{{ url_for('message_thread', user_id=other_user.id) }}?before_id=${beforeId}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.messages || data.messages.length === 0) {
+                    hasMore = false;
+                    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+                    return;
+                }
+
+                // Sauvegarde de la position actuelle
+                const prevScrollHeight = chatMessages.scrollHeight;
+                const prevScrollTop = chatMessages.scrollTop;
+
+                // Création des éléments (sans utiliser la fonction globale addMessage qui forcerait le scroll en bas)
+                const fragment = document.createDocumentFragment();
+                data.messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = `message ${msg.sent_by_current_user ? 'sent' : 'received'}`;
+                    div.dataset.messageId = msg.id;
+                    div.innerHTML = `
+                        <div class="message-content">${msg.content}</div>
+                        <div class="message-time">${msg.created_at}</div>
+                    `;
+                    fragment.appendChild(div);
+                });
+
+                // Insertion en haut
+                chatMessages.insertBefore(fragment, chatMessages.firstChild);
+
+                // Rétablir la position visuelle (reste au même endroit)
+                const newScrollHeight = chatMessages.scrollHeight;
+                chatMessages.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+
+                hasMore = data.has_more;
+                if (!hasMore && loadMoreBtn) loadMoreBtn.style.display = 'none';
+            })
+            .catch(err => console.error(err))
+            .finally(() => {
+                isLoading = false;
+                if (loadMoreBtn) loadMoreBtn.disabled = false;
+            });
+        }
+
+        // Clic sur le bouton "Load older messages"
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', loadOlderMessages);
+        }
+
+        // Détection du scroll tout en haut (l'utilisateur remonte)
+        chatMessages.addEventListener('scroll', function() {
+            if (chatMessages.scrollTop <= 30 && hasMore && !isLoading) {
+                loadOlderMessages();
+            }
+        });
+    });
+
+    // La fonction toggleBlockUser reste accessible globalement car elle est utilisée dans l'attribut onclick
+    window.toggleBlockUser = function(userId) {
+        const button = document.querySelector('.block-user-btn');
+        const icon = button.querySelector('i');
+        const text = button.querySelector('.btn-text');
+        button.disabled = true;
+
+        fetch(`/toggle_block/${userId}`, {
+            method: "POST",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "blocked") {
+                button.classList.add("blocked");
+                icon.classList.replace("fa-user-slash", "fa-user-check");
+                text.textContent = "Unblock";
+                button.title = "Unblock user";
+            } else if (data.status === "unblocked") {
+                button.classList.remove("blocked");
+                icon.classList.replace("fa-user-check", "fa-user-slash");
+                text.textContent = "Block";
+                button.title = "Block user";
+            }
+        })
+        .catch(err => console.error(err))
+        .finally(() => button.disabled = false);
+    };
+})();
+</script>
+
+<style>
+/* Styles cohérents avec le reste de l'app */
+.block-user-btn {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+}
+.block-user-btn:hover {
+    background: #ff3b3b;
+    border-color: #ff3b3b;
+    transform: translateY(-2px);
+}
+.block-user-btn.blocked {
+    background: #1e7e34;
+    border-color: #1e7e34;
+}
+.block-user-btn.blocked:hover {
+    background: #dc3545;
+    border-color: #dc3545;
+}
+.block-user-btn i {
+    font-size: 13px;
+}
+@media (max-width: 600px) {
+    .block-user-btn .btn-text {
+        display: none;
+    }
+    .block-user-btn {
+        padding: 8px;
+        border-radius: 10px;
+    }
+}
+.load-more {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.load-older-btn {
+    background: #2a2a2a;
+    border: 1px solid #555;
+    color: #ccc;
+    padding: 6px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.load-older-btn:hover {
+    background: #444;
+    color: #fff;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,7 @@
+flask_login
+requests
+mutagen
+flask_sqlalchemy
+pillow
+bcrypt
+cryptography

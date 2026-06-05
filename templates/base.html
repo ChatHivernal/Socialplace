@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PS56WQR9');</script>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7603595900448740"
+     crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Social Network{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+<meta name="google-adsense-account" content="ca-pub-7603595900448740">
+<meta property="og:title" content="Socialplace">
+<meta property="og:description" content="Socialplace c'est le réseau social de la liberté">
+<meta property="og:image" content="https://domain.fr/static/chat.png">
+<meta property="og:url" content="https://domain.fr/">
+<meta property="og:type" content="website">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+<body>
+
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PS56WQR9"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+{% if session.admin_id %}
+<div style="background:#ffcc00; color:#000; padding:8px; text-align:center; font-weight:bold;">
+    Impersonation active connecté en tant que {{ current_user.username }} |
+    <a href="{{ url_for('stop_impersonate') }}">Revenir à l'admin</a>
+</div>
+{% endif %}
+
+<nav class="navbar">
+    <div class="nav-container">
+        <button class="nav-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="nav-left">
+            <a href="{{ url_for('index') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="socialplace" class="nav-logo">
+                <span class="brand-text">Socialplace</span>
+            </a>
+
+            <a href="{{ url_for('following') }}" class="nav-link"><i class="fa fa-heart"></i> Feed</a>
+            
+            <a href="/music" class="nav-link"><i class="fa fa-music"></i> SocialZic</a>
+            <a href="{{ url_for('find_users') }}" class="nav-link"><i class="fas fa-users"></i> Users</a>
+            <a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-globe"></i> Scroll</a>
+            <a href="{{ url_for('create_post') }}" class="nav-link"><i class="fas fa-plus"></i> Create</a>
+            <a href="{{ url_for('messages') }}" class="nav-link">
+                <i class="fas fa-envelope"></i> Chats
+                {% if total_unread and total_unread > 0 %}
+                    <span class="unread-indicator" id="unread-indicator">
+                        {{ total_unread if total_unread < 10 else '9+' }}
+                    </span>
+                {% endif %}
+            </a>
+        </div>
+
+        <div class="nav-right">
+            <form action="{{ url_for('search') }}" method="get" class="search-form">
+                <input type="text" name="q" placeholder="Search posts..." class="search-input">
+                <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+            </form>
+
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('profile', username=current_user.username) }}" class="nav-link">
+                    <img src="{{ url_for('static', filename='uploads/profiles/' + current_user.profile_pic) }}" alt="Profile" class="nav-profile-pic">
+                    {{ current_user.username }}
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+<a href="{{ url_for('register') }}" class="nav-link">Register</a>
+
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<!--<div class="flash-message">
+green brand
+</div>-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<a href="https://github.com/ChatHivernal/SocialPlace"
+   target="_blank"
+   rel="noopener noreferrer"
+   class="github-float">
+    <i class="fa-brands fa-github"></i>
+    <span>Based on SocialPlace</span>
+</a>
+
+<style>
+.github-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 99999;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 10px 14px;
+
+    background: #24292f;
+    color: white;
+    text-decoration: none;
+
+    border-radius: 999px;
+
+    font-family: sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    transition: transform .2s ease, background .2s ease;
+}
+
+.github-float i {
+    font-size: 18px;
+}
+
+.github-float:hover {
+    transform: translateY(-2px);
+    background: #000;
+}
+</style>
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+
+</body>
+</html>
+
+<style>
+a {color: #ff6b82;}
+.flash-message {
+    background-color: green;
+    color: white;
+    padding: 12px 20px;
+    text-align: center;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 0 10px 3px #ff4444; 
+}
+.nav-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+</style>
