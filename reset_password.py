@@ -9,7 +9,7 @@ import sys
 
 # Chemin vers la base de données (à adapter si nécessaire)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'instance', 'nyapi.db')
+DB_PATH = os.path.join(BASE_DIR, 'instance', 'socialplace.db')
 
 def main():
     print("=== Changement de mot de passe utilisateur ===\n")
