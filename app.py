@@ -889,6 +889,7 @@ def find_users():
     return render_template('find_users.html', users=users, query=q)
 
 @app.route('/search')
+@login_required
 def search():
     q = request.args.get('q', '')
     page = request.args.get('page', 1, type=int)
@@ -897,6 +898,7 @@ def search():
     return render_template('search.html', query=q, posts=posts, users=users)
 
 @app.route('/search_ajax')
+@login_required
 def search_ajax():
     q = request.args.get('q', '')
     if len(q) < 2:
