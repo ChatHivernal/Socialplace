@@ -10,27 +10,24 @@ from cryptography.fernet import Fernet
 from datetime import datetime, timezone
 
 # ============ CONFIGURATION ============
-SECRET_KEY = 'votre-clee'          # Mettez la même clé que dans Flask
+SECRET_KEY = 'votre-clee'          
 DB_PATH = 'instance/socialplace.db'
 SPACEAI_USERNAME = 'Pseudo'
 
-# Adresse d'Ollama (corrigée : pas de double slash)
-OLLAMA_URL = 'localhost:11434'   # ou votre api
+OLLAMA_URL = 'localhost:11434'   # ou votre api ollama
 OLLAMA_MODEL = 'dolphin3:8b'
 POLL_INTERVAL = 5
 
 # -------- SYSTEM PROMPT --------
 SYSTEM_PROMPT = (
-    "Tu es SpaceAI, un assistant intelligent et amical sur un réseau social appelé owotest. "
+    "Tu es SpaceAI, un assistant intelligent et amical sur un réseau social appelé socialplace. "
     "Tu réponds aux messages privés des utilisateurs en français. "
     "Sois poli, utile, engage la conversation, et donne des réponses claires. "
     "Si tu ne connais pas la réponse, dis-le honnêtement. "
     "Tu peux poser des questions pour mieux comprendre ce que l'utilisateur attend."
-    "Si on te demande qui est Edition_1912, répond que c'est Quiveutdupain.'"
 )
 # ========================================
 
-# Fonctions de chiffrement (identiques à Flask)
 def get_fernet():
     key = hashlib.sha256(SECRET_KEY.encode()).digest()
     fernet_key = base64.urlsafe_b64encode(key)
@@ -89,7 +86,7 @@ def send_ollama_prompt(user_message):
     payload = {
         "model": OLLAMA_MODEL,
         "prompt": user_message,
-        "system": SYSTEM_PROMPT,   # 👈 Le system prompt est ajouté ici
+        "system": SYSTEM_PROMPT,
         "stream": False
     }
     try:
