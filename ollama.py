@@ -71,10 +71,10 @@ def test_ollama_connection():
             timeout=5
         )
         if response.status_code == 200:
-            print("✅ Connexion à Ollama établie.")
+            print("Connexion à Ollama établie.")
             return True
         else:
-            print(f"⚠️ Ollama a répondu avec le statut {response.status_code}")
+            print(f"Ollama a répondu avec le statut {response.status_code}")
             return False
     except Exception as e:
         print(f"❌ Impossible de joindre Ollama : {e}")
@@ -95,17 +95,17 @@ def send_ollama_prompt(user_message):
         data = response.json()
         return data.get('response', '').strip()
     except Exception as e:
-        print(f"⚠️ Erreur Ollama : {e}")
+        print(f"Erreur Ollama : {e}")
         return "Désolé, je n'arrive pas à réfléchir pour le moment."
 
 def main():
     conn = sqlite3.connect(DB_PATH)
     spaceai_id = get_or_create_spaceai(conn)
     conn.close()
-    print(f"✅ SpaceAI ID : {spaceai_id}")
+    print(f"SpaceAI ID : {spaceai_id}")
 
     if not test_ollama_connection():
-        print("⚠️ Le bot continuera mais les réponses seront des messages d'erreur.")
+        print("Le bot continuera mais les réponses seront des messages d'erreur.")
 
     processed_file = 'processed_messages.json'
     if os.path.exists(processed_file):
@@ -145,9 +145,9 @@ def main():
                 else:
                     decrypted = content_data
 
-                print(f"📩 Nouveau message de l'utilisateur {sender_id} : {decrypted[:100]}...")
+                print(f"Nouveau message de l'utilisateur {sender_id} : {decrypted[:100]}...")
                 response = send_ollama_prompt(decrypted)
-                print(f"🤖 Réponse générée : {response[:100]}...")
+                print(f"Réponse générée : {response[:100]}...")
 
                 encrypted_response = encrypt_content(response)
                 c.execute("""
@@ -163,11 +163,11 @@ def main():
                 with open(processed_file, 'w') as f:
                     json.dump(list(processed_ids), f)
 
-                print(f"✅ Réponse envoyée pour le message {msg_id}")
+                print(f"Réponse envoyée pour le message {msg_id}")
 
             conn.close()
         except Exception as e:
-            print(f"⚠️ Erreur dans la boucle principale : {e}")
+            print(f"Erreur dans la boucle principale : {e}")
             time.sleep(5)
 
         time.sleep(POLL_INTERVAL)
