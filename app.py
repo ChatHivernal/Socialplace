@@ -606,7 +606,9 @@ def get_blocked_users():
 @app.route('/messages')
 @login_required
 def messages():
-    user_msgs = Message.query.filter((Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id)).order_by(Message.created_at.desc()).all()
+    user_msgs = Message.query.filter(
+        (Message.sender_id == current_user.id) | (Message.receiver_id == current_user.id)
+    ).order_by(Message.created_at.desc()).all()
     threads = {}
     for msg in user_msgs:
         other_id = msg.receiver_id if msg.sender_id == current_user.id else msg.sender_id
@@ -614,19 +616,34 @@ def messages():
             other_user = User.query.get(other_id)
             if not other_user:
                 continue
-            threads[other_id] = {'user': other_user, 'last_message': msg, 'unread': False, 'unread_count': 0}
+            threads[other_id] = {
+                'user': other_user,
+                'last_message': msg,
+                'unread': False,
+                'unread_count': 0
+            }
         if not msg.read and msg.receiver_id == current_user.id:
             threads[other_id]['unread'] = True
             threads[other_id]['unread_count'] += 1
-        if msg.created_at > threads[other_id]['last_message'].created_at:
+        # ✅ Comparaison via timestamp
+        if msg.created_at.timestamp() > threads[other_id]['last_message'].created_at.timestamp():
             threads[other_id]['last_message'] = msg
-    sorted_threads = sorted(threads.values(), key=lambda x: x['last_message'].created_at, reverse=True)
+
+    # ✅ Tri via timestamp
+    sorted_threads = sorted(
+        threads.values(),
+        key=lambda x: x['last_message'].created_at.timestamp(),
+        reverse=True
+    )
+
+    # Déchiffrer si nécessaire
     for t in sorted_threads:
         if t['last_message'].encrypted:
             try:
                 t['last_message'].content = decrypt_content(t['last_message'].content)
             except Exception:
                 pass
+
     total_unread = Message.query.filter_by(receiver_id=current_user.id, read=False).count()
     return render_template('messages.html', threads=sorted_threads, total_unread=total_unread)
 
