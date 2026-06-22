@@ -48,7 +48,7 @@ def get_or_create_spaceai(conn):
 
     dummy_password = 'password'
     password_hash = bcrypt.hashpw(dummy_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    dummy_email = 'spaceai@example.com'
+    dummy_email = 'mail@example.com'
     normalized = dummy_email.lower().strip()
     email_hash = hashlib.sha256(normalized.encode()).hexdigest()
     encrypted_email = encrypt_content(normalized)
@@ -114,7 +114,7 @@ def main():
     else:
         processed_ids = set()
 
-    print("🤖 Bot SpaceAI démarré, en attente de messages...")
+    print("Bot démarré, en attente de messages...")
     while True:
         try:
             conn = sqlite3.connect(DB_PATH)
