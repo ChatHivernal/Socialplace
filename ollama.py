@@ -12,10 +12,10 @@ from datetime import datetime, timezone
 # ============ CONFIGURATION ============
 SECRET_KEY = 'votre-clee'          # Mettez la même clé que dans Flask
 DB_PATH = 'instance/socialplace.db'
-SPACEAI_USERNAME = 'SpaceAI'
+SPACEAI_USERNAME = 'Pseudo'
 
 # Adresse d'Ollama (corrigée : pas de double slash)
-OLLAMA_URL = 'https://spaceapi.nyapi.fr/api/generate'   # ou http://localhost:11434/api/generate
+OLLAMA_URL = 'localhost:11434'   # ou votre api
 OLLAMA_MODEL = 'dolphin3:8b'
 POLL_INTERVAL = 5
 
@@ -49,7 +49,7 @@ def get_or_create_spaceai(conn):
     if row:
         return row[0]
 
-    dummy_password = '123SpaceAI'
+    dummy_password = 'password'
     password_hash = bcrypt.hashpw(dummy_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     dummy_email = 'spaceai@example.com'
     normalized = dummy_email.lower().strip()
