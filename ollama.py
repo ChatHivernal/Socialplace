@@ -20,7 +20,7 @@ POLL_INTERVAL = 5
 
 # -------- SYSTEM PROMPT --------
 SYSTEM_PROMPT = (
-    "Tu es SpaceAI, un assistant intelligent et amical sur un réseau social appelé socialplace. "
+    "Tu es un assistant intelligent et amical sur un réseau social appelé socialplace. "
     "Tu réponds aux messages privés des utilisateurs en français. "
     "Sois poli, utile, engage la conversation, et donne des réponses claires. "
     "Si tu ne connais pas la réponse, dis-le honnêtement. "
