@@ -30,4 +30,4 @@ Do not forget to create your symbolic link as follows, for your USB drive: `ln -
 - Use Cloudflare Turnstile by adding your Turnstile secret key to protect your site from spam.
 - Change your secret key.
 - Update your `/tos` and `/conf` pages.
-- Create youre AI chat with ollama.py
+- Create youre AI chat with `ollama.py`
