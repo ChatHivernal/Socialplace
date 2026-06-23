@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Activité IP des utilisateurs</h1>
+
+<h2>Utilisateurs actifs (15 dernières minutes)</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Utilisateur</th>
+      <th>Adresse IP</th>
+      <th>Dernière action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user, ip, last_seen in active_users %}
+    <tr>
+      <td>{{ user.username }}</td>
+      <td>{{ ip }}</td>
+      <td>{{ last_seen.strftime('%d/%m/%Y %H:%M') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">Aucun utilisateur actif récemment.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Historique des actions ({{ logs.total }} au total)</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Utilisateur</th>
+      <th>IP</th>
+      <th>Route (endpoint)</th>
+      <th>Méthode</th>
+      <th>Date/Heure</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in logs.items %}
+    <tr>
+      <td>{{ log.user.username if log.user else 'Anonyme' }}</td>
+      <td>{{ log.ip_address }}</td>
+      <td>{{ log.endpoint }}</td>
+      <td>{{ log.method }}</td>
+      <td>{{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">Aucune action enregistrée.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Pagination basique -->
+<div class="pagination">
+  {% if logs.has_prev %}
+    <a href="{{ url_for('admin_ip_activity', page=logs.prev_num) }}">&laquo; Précédent</a>
+  {% endif %}
+  <span>Page {{ logs.page }} / {{ logs.pages }}</span>
+  {% if logs.has_next %}
+    <a href="{{ url_for('admin_ip_activity', page=logs.next_num) }}">Suivant &raquo;</a>
+  {% endif %}
+</div>
+{% endblock %}
