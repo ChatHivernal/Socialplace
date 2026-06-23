@@ -31,4 +31,4 @@ Do not forget to create your symbolic link as follows, for your USB drive: `ln -
 - Change your secret key.
 - Update your `/tos` and `/conf` pages.
 - Create youre AI chat with `ollama.py`
-- You can use `appIP.py` for log IPs of users.
+- You can use `appIP.py` for log IPs of users on `/ip_activity`
