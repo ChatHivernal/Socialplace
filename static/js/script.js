@@ -433,10 +433,10 @@ function updateBadge(count) {
             badge.style.display = 'block';
             if (count > (window.lastUnreadCount || 0)) playNotification();
         }
-        document.title = count > 0 ? `(${count}) Nyapi` : 'Nyapi';
+        document.title = count > 0 ? `(${count}) Socialplace` : 'Socialplace';
     } else {
         if (badge) badge.style.display = 'none';
-        document.title = 'Nyapi';
+        document.title = 'Socialplace';
     }
     window.lastUnreadCount = count;
 }
