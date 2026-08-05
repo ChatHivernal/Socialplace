@@ -49,8 +49,7 @@
                             </div>
                             <div class="user-card-content">
                                 {% if user.bio %}
-                                <p class="user-bio">{{ user.bio|truncate(100) }}</p>
-                                {% else %}
+<p class="user-bio">{{ user.bio|e|truncate(100) }}</p>                                {% else %}
                                 <p class="user-bio-empty">No bio yet</p>
                                 {% endif %}
                             </div>
@@ -976,9 +975,40 @@ document.addEventListener('DOMContentLoaded', function() {
         
         elementsToHighlight.forEach(element => {
             const text = element.textContent;
-            const regex = new RegExp(`(${query})`, 'gi');
-            const highlighted = text.replace(regex, '<span class="highlight">$1</span>');
-            element.innerHTML = highlighted;
+const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+elementsToHighlight.forEach(element => {
+    const text = element.textContent;
+
+    if (!query.trim()) return;
+
+    const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+
+    element.replaceChildren();
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        element.appendChild(
+            document.createTextNode(
+                text.slice(lastIndex, match.index)
+            )
+        );
+
+        const span = document.createElement('span');
+        span.className = 'highlight';
+        span.textContent = match[0];
+        element.appendChild(span);
+
+        lastIndex = match.index + match[0].length;
+    }
+
+    element.appendChild(
+        document.createTextNode(
+            text.slice(lastIndex)
+        )
+    );
+});
         });
     }
     
