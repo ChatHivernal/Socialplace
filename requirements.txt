@@ -5,3 +5,6 @@ flask_sqlalchemy
 pillow
 bcrypt
 cryptography
+flask-wtf
+flask-limiter
+python-magic
