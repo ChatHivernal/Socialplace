@@ -5,6 +5,7 @@ from flask_login import UserMixin
 import re
 import base64
 import hashlib
+from datetime import datetime, timedelta
 import secrets
 import requests
 from mutagen.mp3 import MP3
@@ -18,39 +19,44 @@ import sqlite3
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from cryptography.fernet import Fernet
-from flask import g
-from datetime import timedelta
-from sqlalchemy import func
-
+import shutil
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
-USB_MOUNT = '/media/usb'
-UPLOADS_BASE = os.path.join(USB_MOUNT, 'uploads')
+UPLOADS_BASE = os.path.join(STATIC_DIR, 'uploads')
 PROFILE_UPLOAD_FOLDER = os.path.join(UPLOADS_BASE, 'profiles')
 POST_UPLOAD_FOLDER = os.path.join(UPLOADS_BASE, 'posts')
-
-if not os.path.exists(USB_MOUNT):
-    PROFILE_UPLOAD_FOLDER = os.path.join(STATIC_DIR, 'uploads', 'profiles')
-    POST_UPLOAD_FOLDER = os.path.join(STATIC_DIR, 'uploads', 'posts')
 
 os.makedirs(PROFILE_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(POST_UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(INSTANCE_DIR, exist_ok=True)
 
+
+# Créer l'avatar par défaut
 def create_default_avatar():
-    default_path = os.path.join(STATIC_DIR, 'images', 'default', 'default_avatar.png')
+    default_path = os.path.join(
+        STATIC_DIR, 'images', 'default', 'default_avatar.png'
+    )
     uploads_path = os.path.join(PROFILE_UPLOAD_FOLDER, 'default.png')
+
     if not os.path.exists(default_path):
         os.makedirs(os.path.dirname(default_path), exist_ok=True)
+
         img = Image.new('RGB', (200, 200), color=(255, 107, 53))
         draw = ImageDraw.Draw(img)
+
         draw.ellipse([50, 50, 150, 150], fill=(255, 209, 102))
         draw.ellipse([80, 80, 95, 95], fill=(0, 0, 0))
         draw.ellipse([105, 80, 120, 95], fill=(0, 0, 0))
         draw.arc([75, 100, 125, 130], 0, 180, fill=(0, 0, 0), width=3)
+
         img.save(default_path)
-        img.save(uploads_path)
+
+    os.makedirs(os.path.dirname(uploads_path), exist_ok=True)
+
+    if not os.path.exists(uploads_path):
+        shutil.copy2(default_path, uploads_path)
+
 
 create_default_avatar()
 
@@ -95,8 +101,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(INSTANCE_DIR, 
 app.config['PROFILE_UPLOAD_FOLDER'] = PROFILE_UPLOAD_FOLDER
 app.config['POST_UPLOAD_FOLDER'] = POST_UPLOAD_FOLDER
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'webm', 'mov', 'mp3', 'zip'}
-app.config['TURNSTILE_SITE_KEY'] = 'votre-clee'
-app.config['TURNSTILE_SECRET_KEY'] = 'votre-clee'
+app.config['TURNSTILE_SITE_KEY'] = 'votre-captcha'
+app.config['TURNSTILE_SECRET_KEY'] = 'votre-secret-captcha'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -129,6 +135,8 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     scratch_username = db.Column(db.String(100), nullable=True)
     scratch_profile_url = db.Column(db.String(300), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
     posts = db.relationship('Post', backref='author', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='author', cascade='all, delete-orphan')
@@ -269,7 +277,11 @@ def load_user(user_id):
 
 
 
-
+@app.before_request
+def update_last_seen():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+        db.session.commit()
 
 
 @app.template_filter('decrypt')
@@ -333,7 +345,11 @@ def index():
     page = request.args.get('page', 1, type=int)
     posts_paginate = Post.query.order_by(Post.created_at.desc()).paginate(page=page, per_page=10)
     posts_items = [p for p in posts_paginate.items if p.author is not None]
-    active_users = User.query.order_by(User.created_at.desc()).limit(10).all()
+    active_users = (User.query
+                .filter(User.last_seen >= datetime.utcnow() - timedelta(minutes=15))
+                .order_by(User.last_seen.desc())
+                .limit(10)
+                .all())
     liked_posts = [like.post_id for like in current_user.likes]
     disliked_posts = [dislike.post_id for dislike in current_user.dislikes]
     for post in posts_items:
@@ -901,8 +917,10 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    current_user.is_online = False
+    db.session.commit()
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 @app.route('/delete_account', methods=['POST'])
 @login_required
@@ -1004,7 +1022,11 @@ def following():
     posts = Post.query.filter(Post.user_id.in_(interacted)).order_by(Post.created_at.desc()).paginate(page=page, per_page=10)
     liked_posts = [like.post_id for like in current_user.likes]
     disliked_posts = [dislike.post_id for dislike in current_user.dislikes]
-    active_users = User.query.order_by(User.created_at.desc()).limit(10).all()
+    active_users = (User.query
+                .filter(User.last_seen >= datetime.utcnow() - timedelta(minutes=15))
+                .order_by(User.last_seen.desc())
+                .limit(10)
+                .all())
     for post in posts.items:
         if post.media_type == 'audio' and post.media_file:
             post.audio_duration = get_audio_duration(post.media_file)
