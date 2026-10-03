@@ -1,5 +1,9 @@
 # Socialplace
 
+## -> last update
+Replace the `app.py`, `appIP.py` and `templates/index.html`
+Migration : `sqlite3 instance/socialplace.db "ALTER TABLE user ADD COLUMN last_seen DATETIME;"`
+
 ## Introduction — What is Socialplace?
 
 Socialplace is an old social network that has been shut down and is now open source. It is a place where you can chat, post, exchange messages, and much more.
