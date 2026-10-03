@@ -1,6 +1,6 @@
 # Socialplace
 
-## -> last update
+## → last update
 Replace the `app.py`, `appIP.py` and `templates/index.html`
 Migration : `sqlite3 instance/socialplace.db "ALTER TABLE user ADD COLUMN last_seen DATETIME;"`
 
